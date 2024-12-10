@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark theme colors */
+:root {
+	--bg-primary: #1a1a1a;
+	--bg-secondary: #282828;
+	--bg-tertiary: #1e1e1e;
+	--text-primary: #cccccc;
+	--text-secondary: #8a8a8a;
+	--border-color: #3e3e3e;
+}
+
+/* Global styles */
+html,
+body {
+	@apply antialiased;
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
+}
+
+#root {
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+	background: #4a4a4a;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #555;
+}
