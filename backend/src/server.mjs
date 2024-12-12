@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { authMiddleware } from "./middleware/auth.mjs";
 import gameRouter from "./routes/game.mjs";
 import expressWs from "express-ws";
-import { getQuestionFromSlug } from "./services/questions.mjs";
+import { getQuestionFromSlug, getMCQFromSlug } from "./services/questions.mjs";
 import { verifyUserSolution } from "./services/ai.mjs";
 
 dotenv.config();
@@ -47,7 +47,9 @@ app.get("/question", async (req, res) => {
 app.post("/submitSolution", async (req, res) => {
 	const { solution, questionSlug } = req.body;
 	if (!solution || !questionSlug) {
-		return res.status(400).json({ error: "Solution and question slug are required" });
+		return res
+			.status(400)
+			.json({ error: "Solution and question slug are required" });
 	}
 
 	try {
