@@ -4,6 +4,7 @@ import { db } from "../../firebase/config";
 import { doc, onSnapshot } from "firebase/firestore";
 import Question from "../Question";
 import { useNavigate } from "react-router-dom";
+import { BACKEND_URL } from '../../config';
 
 const MatchCard = ({ match }) => {
 	const { user } = useAuth();
@@ -21,12 +22,8 @@ const MatchCard = ({ match }) => {
 
 		setLoading(true);
 		try {
-			// const response = await fetch(
-			// 	`http://localhost:3000/question?slug=${match.question}&token=${idToken}`
-			// );
-
 			const response = await fetch(
-				`https://backend-bitter-log-4782.fly.dev?slug=${match.question}&token=${idToken}`
+				`${BACKEND_URL}/question?slug=${match.question}&token=${idToken}`
 			);
 			if (!response.ok) throw new Error("Failed to fetch question");
 			const data = await response.json();

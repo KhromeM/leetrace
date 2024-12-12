@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useAuth } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
+import { BACKEND_WS_URL } from '../config';
 
 const WebSocketContext = createContext(null);
 
@@ -43,11 +44,7 @@ export const WebSocketProvider = ({ children }) => {
 		if (!user || ws.current) return;
 
 		const idToken = await user.getIdToken();
-		// ws.current = new WebSocket(`ws://localhost:3000/game?token=${idToken}`);
-
-		ws.current = new WebSocket(
-			`wss://backend-bitter-log-4782.fly.dev/game?token=${idToken}`
-		);
+		ws.current = new WebSocket(`${BACKEND_WS_URL}/game?token=${idToken}`);
 
 		ws.current.onopen = () => {
 			console.log("WebSocket connected");

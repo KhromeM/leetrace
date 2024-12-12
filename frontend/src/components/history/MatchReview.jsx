@@ -6,6 +6,8 @@ import { SolutionEditor } from "../SolutionEditor";
 import { MatchStats } from "../MatchStats";
 import { db } from "../../firebase/config";
 import { doc, onSnapshot } from "firebase/firestore";
+import { BACKEND_URL } from '../../config';
+import { SolutionResultModal } from "../SolutionResultModal";
 
 export const MatchReview = () => {
 	const { matchId } = useParams();
@@ -16,6 +18,9 @@ export const MatchReview = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [solution, setSolution] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [showResultModal, setShowResultModal] = useState(false);
+	const [resultData, setResultData] = useState({ isCorrect: false, score: 0 });
 
 	useEffect(() => {
 		let unsubscribe;
@@ -41,11 +46,8 @@ export const MatchReview = () => {
 							// Fetch question details
 							if (matchData.question) {
 								const idToken = await user.getIdToken();
-								// const response = await fetch(
-								// 	`http://localhost:3000/question?slug=${matchData.question}&token=${idToken}`
-								// );
 								const response = await fetch(
-									`https://backend-bitter-log-4782.fly.dev/question?slug=${matchData.question}&token=${idToken}`
+									`${BACKEND_URL}/question?slug=${matchData.question}&token=${idToken}`
 								);
 
 								if (!response.ok) throw new Error("Failed to fetch question");
@@ -78,6 +80,39 @@ export const MatchReview = () => {
 			}
 		};
 	}, [matchId, user]);
+
+	const handleSubmit = async (solution) => {
+		setIsSubmitting(true);
+		try {
+			const idToken = await user.getIdToken();
+			const response = await fetch(`${BACKEND_URL}/submitSolution?token=${idToken}`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					solution,
+					questionSlug: match.question
+				})
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to submit solution');
+			}
+
+			const result = await response.json();
+			setResultData({
+				isCorrect: result.score >= 3,
+				score: result.score
+			});
+			setShowResultModal(true);
+		} catch (error) {
+			console.error('Error submitting solution:', error);
+			alert('Error submitting solution. Please try again.');
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
 
 	if (loading) {
 		return (
@@ -139,10 +174,18 @@ export const MatchReview = () => {
 				<QuestionDisplay question={question} />
 				<SolutionEditor
 					matchId={matchId}
-					readOnly={true}
 					initialSolution={solution}
+					onSubmit={handleSubmit}
+					isSubmitting={isSubmitting}
 				/>
 			</div>
+
+			<SolutionResultModal
+				isOpen={showResultModal}
+				onClose={() => setShowResultModal(false)}
+				isCorrect={resultData.isCorrect}
+				score={resultData.score}
+			/>
 		</div>
 	);
 };

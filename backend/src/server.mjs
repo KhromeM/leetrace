@@ -5,6 +5,7 @@ import { authMiddleware } from "./middleware/auth.mjs";
 import gameRouter from "./routes/game.mjs";
 import expressWs from "express-ws";
 import { getQuestionFromSlug } from "./services/questions.mjs";
+import { verifyUserSolution } from "./services/ai.mjs";
 
 dotenv.config();
 
@@ -42,6 +43,27 @@ app.get("/question", async (req, res) => {
 		res.status(500).json({ error: "Internal server error" });
 	}
 });
+
+app.post("/submitSolution", async (req, res) => {
+	const { solution, questionSlug } = req.body;
+	if (!solution || !questionSlug) {
+		return res.status(400).json({ error: "Solution and question slug are required" });
+	}
+
+	try {
+		const question = await getQuestionFromSlug(questionSlug);
+		if (!question) {
+			return res.status(404).json({ error: "Question not found" });
+		}
+
+		const result = await verifyUserSolution(solution, question);
+		res.json(result);
+	} catch (error) {
+		console.error("Error in /submitSolution endpoint:", error);
+		res.status(500).json({ error: "Failed to verify solution" });
+	}
+});
+
 app.ws("/game", gameRouter);
 
 const PORT = 3000 || process.env.PORT;

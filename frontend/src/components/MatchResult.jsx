@@ -49,7 +49,7 @@ export const matchMessages = {
 	],
 
 	losses: [
-		"🤔 The bug was between keyboard and chair",
+		"🤔 The bug is between keyboard and chair",
 		"🫣 The intern just rejected your PR",
 		"📉 Your code is being used as a bad example in bootcamps",
 		"🤪 You lost! Your code just uninstalled itself in protest",

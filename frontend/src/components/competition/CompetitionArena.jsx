@@ -7,7 +7,8 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { QuestionDisplay } from "../QuestionDisplay";
 import { SolutionEditor } from "../SolutionEditor";
 import { MatchStats } from "../MatchStats";
-import { MatchResult } from "../MatchResult";
+import { ResultPopup } from "../ResultPopup";
+import { SolutionResultModal } from "../SolutionResultModal";
 import { Countdown } from "./Countdown";
 
 export const CompetitionArena = () => {
@@ -23,11 +24,16 @@ export const CompetitionArena = () => {
 	const [countdown, setCountdown] = useState(null);
 	const [question, setQuestion] = useState(null);
 	const [opponent, setOpponent] = useState(null);
+	const [showResult, setShowResult] = useState(false);
+	const [showSolutionResult, setShowSolutionResult] = useState(false);
+	const [solutionResult, setSolutionResult] = useState({ isCorrect: false, score: 0 });
 
 	useEffect(() => {
 		if (!match) {
-			console.log("BACK TO HOME", ws, match);
-			navigate("/");
+			if (!currentMatch) {
+				console.log("BACK TO HOME", ws, match);
+				navigate("/");
+			}
 			return;
 		}
 
@@ -50,18 +56,13 @@ export const CompetitionArena = () => {
 						...prevMatch,
 						...data.match,
 					}));
-
 					break;
 
 				case "SOLUTION_DENIED":
 					setIsSubmitting(false);
-					alert(`Solution not accepted.`);
+					setSolutionResult({ isCorrect: false, score: data.score });
+					setShowSolutionResult(true);
 					break;
-
-				// case "SOLUTION_VERIFIED":
-				// 	setIsSubmitting(false);
-				// 	alert(`Solution accepted!\n ${data.feedback}`);
-				// 	break;
 			}
 		};
 
@@ -73,6 +74,7 @@ export const CompetitionArena = () => {
 				console.log("MATCH COMPLETED");
 				setMatchStatus("completed");
 				setResult(matchData);
+				setShowResult(true);
 			}
 			setMatch(matchData);
 		});
@@ -81,7 +83,17 @@ export const CompetitionArena = () => {
 			unsubscribe();
 			ws.removeEventListener("message", handleMessage);
 		};
-	}, [match?.id, navigate]);
+	}, [match?.id, navigate, currentMatch]);
+
+	// Recover solution from local storage on initial load
+	useEffect(() => {
+		if (match?.id) {
+			const savedSolution = localStorage.getItem(`solution-${match.id}`);
+			if (savedSolution) {
+				setSolution(savedSolution);
+			}
+		}
+	}, [match?.id]);
 
 	if (!match) {
 		return <Navigate to="/" />;
@@ -91,47 +103,62 @@ export const CompetitionArena = () => {
 		return <Countdown countdown={countdown} opponent={opponent} />;
 	}
 
-	if (matchStatus === "completed") {
-		return <MatchResult result={result} user={user} match={match} />;
-	}
-
-	if (matchStatus === "active" && question) {
-		return (
-			<div className="max-w-6xl mx-auto p-6">
-				<MatchStats
-					match={match}
-					currentUserId={user.uid}
-					question={question}
-					onSurrender={() => {
-						sendMessage({
-							type: "SURRENDER",
-							matchId: match.id,
-						});
-					}}
-				/>
-
-				<div className="grid md:grid-cols-2 gap-6">
-					<QuestionDisplay question={question} />
-					<SolutionEditor
-						onSubmit={(solution) => {
-							console.log(solution);
-							setIsSubmitting(true);
-							sendMessage({
-								type: "VERIFY_SOLUTION",
-								matchId: match.id,
-								solution,
-							});
-						}}
-						isSubmitting={isSubmitting}
-					/>
-				</div>
-			</div>
-		);
-	}
-
 	return (
-		<div className="max-w-2xl mx-auto p-6 text-center">
-			<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-		</div>
+		<>
+			<div className="max-w-6xl mx-auto p-6">
+				{(matchStatus === "active" || matchStatus === "completed") && question ? (
+					<>
+						<MatchStats
+							match={match}
+							currentUserId={user.uid}
+							question={question}
+							onSurrender={() => {
+								sendMessage({
+									type: "SURRENDER",
+									matchId: match.id,
+								});
+							}}
+						/>
+
+						<div className="grid md:grid-cols-2 gap-6">
+							<QuestionDisplay question={question} />
+							<SolutionEditor
+								onSubmit={(solution) => {
+									console.log(solution);
+									setIsSubmitting(true);
+									sendMessage({
+										type: "VERIFY_SOLUTION",
+										matchId: match.id,
+										solution,
+									});
+								}}
+								isSubmitting={isSubmitting}
+								matchId={match.id}
+								initialSolution={solution}
+							/>
+						</div>
+					</>
+				) : (
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+					</div>
+				)}
+			</div>
+
+			{showResult && (
+				<ResultPopup 
+					result={result} 
+					user={user} 
+					onClose={() => setShowResult(false)} 
+				/>
+			)}
+
+			<SolutionResultModal
+				isOpen={showSolutionResult}
+				onClose={() => setShowSolutionResult(false)}
+				isCorrect={solutionResult.isCorrect}
+				score={solutionResult.score}
+			/>
+		</>
 	);
 };

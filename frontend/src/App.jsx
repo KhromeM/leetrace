@@ -1,8 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Navbar } from "./components/Navbar";
+import { Landing } from "./components/Landing";
 import { MatchMaking } from "./components/MatchMaking";
 import { CompetitionArena } from "./components/competition/CompetitionArena";
 import { Leaderboard } from "./components/Leaderboard";
@@ -21,7 +22,9 @@ export default function App() {
 								path="/"
 								element={
 									<ProtectedRoute>
-										<MatchMaking />
+										{({ user }) => 
+											user ? <MatchMaking /> : <Landing />
+										}
 									</ProtectedRoute>
 								}
 							/>
